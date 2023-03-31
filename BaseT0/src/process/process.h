@@ -1,9 +1,11 @@
 #pragma once
-
 struct proceso{
-    char nombre;
+    char *nombre;
     int pid;
+    int tiempo_inicio;
     char estado;
     int burst;
-    int io_waiting;
+    int io_wait;
+    char *path;
+    char **argumentos;
 };

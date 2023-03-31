@@ -1,0 +1,3 @@
+2
+PROCESS1 1 10 5 /bin/ls 0
+PROCESS2 6 5 12 /bin/touch 1 archivo.txt

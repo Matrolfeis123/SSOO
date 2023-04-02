@@ -8,6 +8,6 @@ typedef struct proceso{
     int burst;
     int io_wait;
     char *path;
-    char *argumentos;
+    char *argumentos; //Quizas son solo numeros revisar
     struct proceso* siguiente;
 } Proceso;

@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
 			.io_wait = atoi(input_file->lines[i][3]),
 			.path = input_file->lines[i][4],							// .argumentos es un arreglo en heap de largo ARGc
 			.argumentos = calloc(input_file->lines[i][4],sizeof(int)), // !!! Verificar de qué tipo serán los ARGi (los dejé como int por mientras) Me parece q son nombres de archivos .txt
-			.estado = 'READY',
+			.estado = "READY",
 			.pid = i
 		};
 

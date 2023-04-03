@@ -32,13 +32,13 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		Proceso proceso_i = {										// Instancio el proceso número 'i'
-			.nombre = input_file->lines[i][0],						// y le agrego sus atributos
+			.nombre = *(input_file->lines[i][0]),						// y le agrego sus atributos
 			.tiempo_inicio = atoi(input_file->lines[i][1]),
 			.burst = atoi(input_file->lines[i][2]),
 			.io_wait = atoi(input_file->lines[i][3]),
 			.path = input_file->lines[i][4],							// .argumentos es un arreglo en heap de largo ARGc
-			.argumentos = calloc(input_file->lines[i][4],sizeof(int)), // !!! Verificar de qué tipo serán los ARGi (los dejé como int por mientras) Me parece q son nombres de archivos .txt
-			.estado = "READY",
+			.argumentos = calloc(atoi(input_file->lines[i][4]),sizeof(char)), 
+			.estado = READY,
 			.pid = i
 		};
 

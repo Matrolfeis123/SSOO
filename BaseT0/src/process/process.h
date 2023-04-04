@@ -10,13 +10,13 @@ typedef enum estado_proceso {
 
 
 typedef struct proceso{
-    char nombre;
+    char* nombre;
     int pid;
     int tiempo_inicio;
     Estado estado;
     int burst;
     int io_wait;
-    char *path;
-    char *argumentos; //Quizas son solo numeros revisar
+    char* path;
+    char **argumentos;
     struct proceso* siguiente;
 } Proceso;

@@ -1,0 +1,99 @@
+Claro, aquí te muestro una posible implementación del scheduler en base a la información que me 
+proporcionaste:
+
+
+#include <iostream>
+#include <queue>
+#include <ctime>
+#include <unistd.h>
+#include <sys/wait.h>
+
+using namespace std;
+
+// Definimos la estructura de un proceso
+struct Process {
+    int id;
+    int arrival_time;
+    int total_cpu_time;
+    int cpu_time_left;
+    int io_burst_time;
+    int io_time_left;
+    int state; // 0: NEW, 1: READY, 2: RUNNING, 3: WAITING, 4: FINISHED
+};
+
+// Función para simular la ejecución de un proceso
+void execute(Process &process) {
+    cout << "Proceso " << process.id << " en ejecución." << endl;
+    int start_time = clock();
+    while (process.cpu_time_left > 0) {
+        process.cpu_time_left--;
+        if (process.cpu_time_left == 0) {
+            process.state = 4; // Pasamos a estado FINISHED
+        }
+        else if (process.io_burst_time > 0 && process.cpu_time_left % process.io_burst_time == 0) {
+            process.state = 3; // Pasamos a estado WAITING
+            break; // Salimos del ciclo de ejecución
+        }
+    }
+    int end_time = clock();
+    int cpu_time = (end_time - start_time) / CLOCKS_PER_SEC;
+    cout << "Proceso " << process.id << " ha utilizado " << cpu_time << " segundos de CPU." << endl;
+}
+
+// Esta función simula la ejecución de un proceso. Toma como argumento un objeto Process y ejecuta su código.
+// Durante la ejecución, se decrementa el tiempo de CPU restante del proceso en un ciclo while. 
+// Si el tiempo de CPU restante llega a cero, el estado del proceso se cambia a FINISHED (4). 
+// Si el proceso tiene un tiempo de ráfaga de E/S (io_burst_time) mayor a cero y el tiempo de CPU restante es 
+// un múltiplo de io_burst_time, el estado del proceso se cambia a WAITING (3) y se sale del ciclo de ejecución.
+
+// La función también mide el tiempo de CPU utilizado por el proceso a través de la función clock() de 
+// la biblioteca time.h. En la variable start_time se guarda el tiempo de procesador antes de iniciar el 
+// ciclo while, y en la variable end_time se guarda el tiempo de procesador al salir del ciclo. 
+// La diferencia entre end_time y start_time, dividida por CLOCKS_PER_SEC, da el tiempo en segundos que 
+// el proceso estuvo en ejecución en la CPU. Finalmente, se imprime el tiempo de CPU utilizado por el proceso 
+// en segundos.
+
+
+
+
+
+
+// Función para el scheduler
+void scheduler(queue<Process> &ready_queue, Process &running_process) {
+    if (running_process.state == 4) {
+        cout << "Proceso " << running_process.id << " ha terminado su ejecución." << endl;
+        running_process = Process(); // Vaciamos el proceso que estaba en ejecución
+    }
+    if (running_process.state == 3) {
+        cout << "Proceso " << running_process.id << " en espera por I/O." << endl;
+        running_process.io_time_left--;
+        if (running_process.io_time_left == 0) {
+            running_process.state = 1; // Pasamos a estado READY
+            ready_queue.push(running_process);
+            running_process = Process(); // Vaciamos el proceso que estaba en ejecución
+        }
+    }
+    if (running_process.state == 0 && !ready_queue.empty()) {
+        running_process = ready_queue.front();
+        ready_queue.pop();
+        running_process.state = 2; // Pasamos a estado RUNNING
+        execute(running_process);
+    }
+}
+
+int main() {
+    // Creamos la cola de procesos y agregamos algunos procesos de ejemplo
+    queue<Process> ready_queue;
+    ready_queue.push({1, 0, 10, 10, 0, 0, 1}); // Proceso 1: Tiene un tiempo total de CPU de 10 segundos
+    ready_queue.push({2, 2, 5, 5, 2, 2, 1}); // Proceso 2: Tiene un tiempo total de CPU de 5 segundos y hace I/O cada 2 segundos
+
+    // Creamos el proceso inicial que se ejecutará
+    Process running_process;
+
+    // Ejecutamos el scheduler por 20 segundos
+    int current_time = 0;
+    while (current_time < 20) {
+        scheduler(ready_queue, running_process);
+        current_time++;
+        sleep(1);
+    }

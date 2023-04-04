@@ -39,14 +39,13 @@ int main(int argc, char const *argv[])
 			.path = input_file->lines[i][4],							// .argumentos es un arreglo en heap de largo ARGc
 			.argumentos = calloc(atoi(input_file->lines[i][4]),sizeof(char)), 
 			.estado = READY,
-			.pid = i
 		};
 
 		// Acá deberíamos printear el proceso para verificar correcto funcionamiento
 
-		for (int j = 5; j < 5+input_file->lines[i][4]; ++j)		//agrego los ARGi al arreglo vacío que había en .argumentos
+		for (int j = 5; j < 5+ *(input_file->lines[i][4]); ++j)		//agrego los ARGi al arreglo vacío que había en .argumentos
 		{
-			proceso_i.argumentos[j];
+			proceso_i.argumentos[j-5] = *(input_file->lines[i][j]);
 		}
 
 		arreglo_procesos[i] = proceso_i;			//apendo el proceso número 'i' al arreglo_procesos
@@ -61,8 +60,8 @@ int main(int argc, char const *argv[])
 	// 3. Hago su valor NULL en el arreglo_procesos
 	// 4. Go to 1.
 
-	Proceso cola_procesos[cantidad_procesos];	//Arreglo de Procesos en el stack
-	int i,j,min_idx;
+	Proceso* dir_principio_cola;  // Falta asignar!
+	int min_idx;
 	for (int i = 0; i < cantidad_procesos-1; ++i)
 	{
 		min_idx = i;

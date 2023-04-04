@@ -81,7 +81,6 @@ int main(int argc, char const *argv[])
 		
 	}
 	//imprimir cola de procesos
-	printf("%i\n", cantidad_procesos);
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		printf("tiempo inicio %s: %i\n", arreglo_procesos[i].nombre, arreglo_procesos[i].tiempo_inicio);

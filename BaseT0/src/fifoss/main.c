@@ -1,5 +1,6 @@
 #include <stdio.h>	// FILE, fopen, fclose, etc.
 #include <stdlib.h> // malloc, calloc, free, etc
+#include <string.h> // strlen, strcpy, etc
 #include "../process/process.h"
 #include "../queue/queue.h"
 #include "../file_manager/manager.h"
@@ -33,7 +34,7 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		Proceso proceso_i = {										// Instancio el proceso número 'i'
-			.nombre = input_file->lines[i][0],						// y le agrego sus atributos
+			.nombre = calloc(strlen(input_file->lines[i][0]) + 1, sizeof(char)), // Asignar memoria para el nombre
 			.tiempo_inicio = atoi(input_file->lines[i][1]),
 			.burst = atoi(input_file->lines[i][2]),
 			.io_wait = atoi(input_file->lines[i][3]),
@@ -41,6 +42,8 @@ int main(int argc, char const *argv[])
 			.argumentos = calloc(atoi(input_file->lines[i][5]),sizeof(char)), 
 			.estado = READY,
 		};
+		strcpy(proceso_i.nombre, input_file->lines[i][0]); // Copiar el nombre del proceso. Recordar liberar memoria al final
+
 
 
 		// Acá deberíamos printear el proceso para verificar correcto funcionamiento
@@ -84,6 +87,8 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		printf("tiempo inicio %s: %i\n", arreglo_procesos[i].nombre, arreglo_procesos[i].tiempo_inicio);
+
+
 		if (i != cantidad_procesos-1)
 		{
 			arreglo_procesos[i].siguiente = &arreglo_procesos[i+1];
@@ -93,6 +98,9 @@ int main(int argc, char const *argv[])
 			arreglo_procesos[i].siguiente = NULL;
 		}
 	}
+
+
+	
 }
 
 //agustin volvio a editar

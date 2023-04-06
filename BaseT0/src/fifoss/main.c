@@ -141,21 +141,29 @@ int main(int argc, char const *argv[])
 
 
 
+
+	// Mientras hayan procesos en cola ready:
+	// Si cpu está desocupada
+	// la marco como ocupada
+	// Ejecuto proceso head
+	// Marco cpu como desocupada
+	// Si hay un segundo proceso en cola ready,
+	// Actualizo el head al segundo proceso en cola ready
+
 	int cpu_ocupada = 1;
 
-	while (cola_procesos.head != NULL){ 									// Mientras hayan procesos en cola ready:
-		if (cpu_ocupada == 0){												// Si cpu está desocupada
-			cpu_ocupada = 1;												// la marco como ocupada
-			ejecutar_proceso(cola_procesos.head);							// Ejecuto proceso head
-			cpu_ocupada = 0;												// Marco cpu como desocupada
-			if (&(*(cola_procesos.head)->siguiente) != NULL){				// Si hay un segundo proceso en cola ready,
-				cola_procesos.head = &(*(cola_procesos.head)->siguiente);	// Actualizo el head al segundo proceso en cola ready
+	while (cola_procesos.head != NULL){ 									
+		if (cpu_ocupada == 0){												
+			cpu_ocupada = 1;												
+			ejecutar_proceso(cola_procesos.head);							
+			cpu_ocupada = 0;												
+			if (&(*(cola_procesos.head)->siguiente) != NULL){				
+				cola_procesos.head = &(*(cola_procesos.head)->siguiente);	
 			}
 		}
-		//revisar_procesos_wait();				// COMPLETAR
+		revisar_procesos_wait();				
 	}
 		
-
 
 
 
@@ -179,5 +187,7 @@ int main(int argc, char const *argv[])
 	}
 
 }
+
+
 
 

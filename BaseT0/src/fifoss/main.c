@@ -4,6 +4,7 @@
 #include <unistd.h> // fork, execv, etc
 #include <sys/wait.h> // wait, waitpid, etc
 #include <time.h> // clock, etc
+#include <signal.h> // signal, etc
 #include "../process/process.h"
 #include "../queue/queue.h"
 #include "../file_manager/manager.h"
@@ -44,6 +45,8 @@ int main(int argc, char const *argv[])
 			.path = input_file->lines[i][4],							// .argumentos es un arreglo en heap de largo ARGc
 			.argumentos = calloc(atoi(input_file->lines[i][5]),sizeof(char)), 
 			.estado = READY,
+			.t_wait = 0, // Momento en que inicia su I/O_Burst
+
 		};
 		strcpy(proceso_i.nombre, input_file->lines[i][0]); // Copiar el nombre del proceso. Recordar liberar memoria al final
 
@@ -69,7 +72,6 @@ int main(int argc, char const *argv[])
 	// 3. Hago su valor NULL en el arreglo_procesos
 	// 4. Go to 1.
 
-	Proceso* dir_principio_cola;  // Falta asignar!
 	int min_idx;
 	for (int i = 0; i < cantidad_procesos-1; ++i)
 	{
@@ -120,61 +122,123 @@ int main(int argc, char const *argv[])
 	// 4. Go to 1.
 
 	// guardar variable de proceso actual:
-	Proceso* proceso_actual = cola_procesos.head;
+	
 
 
+	// Inicializar reloj
+	int inicio = clock()/CLOCKS_PER_SEC;
 	while (cola_procesos.head != NULL )// FALTA esperar a que llegue el primer proceso. IDDEA: (&& tiempo_inicio >= proceso_actual->tiempo_inicio)
-	{
+	{	Proceso* proceso_actual = cola_procesos.head;
+
 		if (proceso_actual->estado == RUNNING){ //Si hay un proceso ejecutandose
 			// Dentro de ejecutar proceso, se esta constantemente comprobando si el tiempo de cpu burst actual se termina, 
 			// con lo que proceso_actual->estado se actualiza a WAITING o FINISHED
-			ejecutar_proceso(proceso_actual); // Corroborar que es lo que entrega como output
+			
+			if (proceso_actual->t_wait == 0) // Si es la primera vez que se ejecuta el proceso, ejecutar 
+			{	
+				// Imprimir comienza ejecucion proceso
+				printf("Comienza primera ejecución de %s\n", proceso_actual->nombre);
+				ejecutar_proceso(proceso_actual); // Corroborar que es lo que entrega como output
+
+			} else {
+				// Si no es la primera vez que se ejecuta el proceso, enviar señal de continuar
+				kill(proceso_actual->pid, SIGCONT);
+			}
+
+			// Esperar a que finalice proceso hijo o esperar señal de IO
+			while(proceso_actual->estado != FINISHED && proceso_actual->estado != WAITING){
+				// definir tiempo_transcurrido:
+				int tiempo_transcurrido = (clock() - inicio)/CLOCKS_PER_SEC;
+				// si tiempo_transcurrido >= burst:
+				if(tiempo_transcurrido >= proceso_actual->burst){
+					// Si el proceso termina antes de tiempo, pausar y moverlo a la cola de waiting
+					//1. Enviar señal de pausa a proceso hijo con signal
+					printf("Se envia señal de pausa a %s, pid = %i\n", proceso_actual->nombre, proceso_actual->pid);
+					kill(SIGSTOP, proceso_actual->pid); //Si esque hay error, entonces usar comando kill()
+					proceso_actual->t_wait = clock()/CLOCKS_PER_SEC;
+					cambiar_estado(proceso_actual, WAITING);
+					obtener_estado(proceso_actual);
+					//Guardar tiempo en cuanto inicia espera
+					break; //CORROBORAR SI ESTE BREAK HACE Q SE VUELVA A CORRER EL WHILE
+					// Ademas, nose si debo comprobar si el proceso termino o no
+				}
+				int status;
+				if (waitpid(proceso_actual->pid, &status, WNOHANG) == -1){
+				//error
+				printf("Error al esperar al proceso_actual hijo\n");
+				exit(EXIT_FAILURE);
+				}
+				
+				else if (WIFEXITED(status)){
+					//proceso_actual hijo termina
+					//Imprimir que se recibio señal de termino de proceso hijo
+					printf("Se recibio señal de termino proceso hijo pid = %i\n", proceso_actual->pid);
+					cambiar_estado(proceso_actual, FINISHED);
+					obtener_estado(proceso_actual);
+					break;
+				}
+				else if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT){
+					//proceso hijo termina por una señal de interrupcion
+					cambiar_estado(proceso_actual, FINISHED);
+					obtener_estado(proceso_actual);
+					break;
+				}
+
+				else if (WIFCONTINUED(status)){
+					//proceso hijo continua
+					printf("Se recibio señal de continuar proceso hijo pid = %i\n", proceso_actual->pid);
+					cambiar_estado(proceso_actual, RUNNING);
+					obtener_estado(proceso_actual);
+					break;
+				}
+
+			}
 		}
+
 		else if (proceso_actual->estado == FINISHED){ //Si el proceso termino
+
+			// Sacar proceso de la cola		
+			cola_procesos.head = &(*(cola_procesos.head)->siguiente);
+	
+
 			// sacarlo de la cola
 			// liberar memoria
 			// actualizar puntero head de la cola
 			// actualizar puntero proceso_actual
 		}
-		else if (proceso_actual->estado == READY){ //Si el proceso no termino
-			//Si es primera vez que el proceso se pone en ejecucion, cambiar a estado RUNNING
-			//Si no es la primera vez, moverlo al final de la cola cola_procesos(?) o 
-			
-			// moverlo al final de la cola
-			// actualizar puntero tail de la cola
+
+		else if (proceso_actual->estado == READY){
+			// Comprobar si se cumplio su tiempo de inicio
+			// Si se cumplio, cambiar estado a running
 			// actualizar puntero proceso_actual
+			while(clock()/CLOCKS_PER_SEC - inicio < proceso_actual->tiempo_inicio){
+				//Esperar a que se cumpla el tiempo de inicio
+				continue;
+			}
+			proceso_actual->estado = RUNNING;
 		}	
-		else if (proceso_actual == WAITING){
-			// Pasar a proceso a la cola de Waiting, hasta que se cumpla el tiempo de espera del proceso
+		
+		else if (proceso_actual->estado == WAITING){
+			// Comprobar si ya se cumplio su tiempo io_wait
+			// Si se cumplio, moverlo a la cola de Ready
+			// actualizar puntero proceso_actual
+			
+			if (clock()/CLOCKS_PER_SEC - proceso_actual->t_wait >= proceso_actual->io_wait){
+					//Enviar proceso al ultimo de la cola
+					proceso_actual->estado = RUNNING;
+				}
+			else{					
+				proceso_actual->siguiente = NULL;
+				cola_procesos.tail->siguiente = proceso_actual;
+				cola_procesos.tail = proceso_actual;
+				}
+
+			}
+		// AQUI COMPROBAR EL ESTADO DE LOS PROCESOS WAITING Y VER SI SU TIEMPO DE ESPERA YA SE CUMPLIO, para pasarlo a ready
 			// al cumplirse el tiempo de espera, mover el proceso a la cola de Ready
 			// actualizar puntero del proceso_actual (?)
+
 		}
-
-
-		
-
-
-
-
-
-
-		// 0. inicializar reloj y esperar a que el primer proceso llegue
-		double tiempo_cpu_burst_actual = proceso_actual->burst;
-		clock_t tiempo_inicio_proceso = clock();
-		clock_t cpu_burst_actual = clock() + tiempo_cpu_burst_actual * CLOCKS_PER_SEC; // tiempo del burst del proceso actual
-
-		while(tiempo_inicio_proceso < cpu_burst_actual) // mientras el tiempo de cpu del proceso actual no se haya cumplido
-		{
-			ejecutar_proceso(proceso_actual); //creo que retorna el tiempo que demoro el proceso
-		}
-
-		// 1. Ejecutar el proceso head de la cola
-		// 2. Si el proceso terminó, sacarlo de la cola
-		// 3. Si el proceso no terminó, moverlo al final de la cola
-		// 4. Go to 1.
-
-	}
-
 }
 
 

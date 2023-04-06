@@ -8,7 +8,6 @@ typedef enum estado_proceso {
     FINISHED
 } Estado;
 
-
 typedef struct proceso{
     char* nombre;
     int pid;
@@ -19,4 +18,13 @@ typedef struct proceso{
     char* path;
     char **argumentos;
     struct proceso* siguiente;
+    int contador_uso_cpu;
+    int turnaround_time;
+    int response_time;
+    int waiting_time;
+    int codigo_exit;
 } Proceso;
+
+void ejecutar_proceso(Proceso* proceso);
+void cambiar_estado(Proceso* proceso, Estado estado);
+void obtener_estado(Proceso* proceso);

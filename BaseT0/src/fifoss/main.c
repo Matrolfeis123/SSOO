@@ -30,6 +30,7 @@ int main(int argc, char const *argv[])
 	Proceso* arreglo_procesos = calloc(cantidad_procesos,sizeof(Proceso)); //Arreglo de Procesos en el heap
 
 
+
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		Proceso proceso_i = {										// Instancio el proceso número 'i'
@@ -44,17 +45,19 @@ int main(int argc, char const *argv[])
 
 
 		// Acá deberíamos printear el proceso para verificar correcto funcionamiento
-
 		for (int j = 0; j < atoi(input_file->lines[i][5]); ++j)		//agrego los ARGi al arreglo vacío que había en .argumentos
 		{
-			proceso_i.argumentos[j] = input_file->lines[i][j+5];
+			proceso_i.argumentos[j] = input_file->lines[i][j+6];
 		}
 
 		arreglo_procesos[i] = proceso_i;			//apendo el proceso número 'i' al arreglo_procesos
 	}
 	input_file_destroy(input_file);
 
-
+	for (int i = 0; i < cantidad_procesos; ++i)
+	{
+		printf("%i.- NOMBRE: %s\n", i, arreglo_procesos[i].nombre);
+	}
 	/*Instanciar cola de procesos*/
 
 	// Pasos:
@@ -81,6 +84,9 @@ int main(int argc, char const *argv[])
 		
 	}
 	//imprimir cola de procesos
+	
+
+
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
 		printf("tiempo inicio %s: %i\n", arreglo_procesos[i].nombre, arreglo_procesos[i].tiempo_inicio);

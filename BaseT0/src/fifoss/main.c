@@ -1,6 +1,9 @@
 #include <stdio.h>	// FILE, fopen, fclose, etc.
 #include <stdlib.h> // malloc, calloc, free, etc
 #include <string.h> // strlen, strcpy, etc
+#include <unistd.h> // fork, execv, etc
+#include <sys/wait.h> // wait, waitpid, etc
+#include <time.h> // clock, etc
 #include "../process/process.h"
 #include "../queue/queue.h"
 #include "../file_manager/manager.h"
@@ -83,6 +86,14 @@ int main(int argc, char const *argv[])
 		arreglo_procesos[i] = temp;
 		
 	}
+	// Inicializar Cola
+	Cola cola_procesos = {NULL, NULL};
+	// Asigno puntero a proceso head y tail de cola
+	cola_procesos.head = &arreglo_procesos[0];
+	cola_procesos.tail = &arreglo_procesos[cantidad_procesos-1];
+
+
+
 	//imprimir cola de procesos
 	for (int i = 0; i < cantidad_procesos; ++i)
 	{
@@ -100,7 +111,70 @@ int main(int argc, char const *argv[])
 	}
 
 
-	
+	/*Ejecución de los procesos*/
+	// Pasos:
+	// 0. inicializar reloj y esperar a que el primer proceso llegue
+	// 1. Ejecutar el proceso head de la cola
+	// 2. Si el proceso terminó, sacarlo de la cola
+	// 3. Si el proceso no terminó, moverlo al final de la cola
+	// 4. Go to 1.
+
+	// guardar variable de proceso actual:
+	Proceso* proceso_actual = cola_procesos.head;
+
+
+	while (cola_procesos.head != NULL )// FALTA esperar a que llegue el primer proceso. IDDEA: (&& tiempo_inicio >= proceso_actual->tiempo_inicio)
+	{
+		if (proceso_actual->estado == RUNNING){ //Si hay un proceso ejecutandose
+			// Dentro de ejecutar proceso, se esta constantemente comprobando si el tiempo de cpu burst actual se termina, 
+			// con lo que proceso_actual->estado se actualiza a WAITING o FINISHED
+			ejecutar_proceso(proceso_actual); // Corroborar que es lo que entrega como output
+		}
+		else if (proceso_actual->estado == FINISHED){ //Si el proceso termino
+			// sacarlo de la cola
+			// liberar memoria
+			// actualizar puntero head de la cola
+			// actualizar puntero proceso_actual
+		}
+		else if (proceso_actual->estado == READY){ //Si el proceso no termino
+			//Si es primera vez que el proceso se pone en ejecucion, cambiar a estado RUNNING
+			//Si no es la primera vez, moverlo al final de la cola cola_procesos(?) o 
+			
+			// moverlo al final de la cola
+			// actualizar puntero tail de la cola
+			// actualizar puntero proceso_actual
+		}	
+		else if (proceso_actual == WAITING){
+			// Pasar a proceso a la cola de Waiting, hasta que se cumpla el tiempo de espera del proceso
+			// al cumplirse el tiempo de espera, mover el proceso a la cola de Ready
+			// actualizar puntero del proceso_actual (?)
+		}
+
+
+		
+
+
+
+
+
+
+		// 0. inicializar reloj y esperar a que el primer proceso llegue
+		double tiempo_cpu_burst_actual = proceso_actual->burst;
+		clock_t tiempo_inicio_proceso = clock();
+		clock_t cpu_burst_actual = clock() + tiempo_cpu_burst_actual * CLOCKS_PER_SEC; // tiempo del burst del proceso actual
+
+		while(tiempo_inicio_proceso < cpu_burst_actual) // mientras el tiempo de cpu del proceso actual no se haya cumplido
+		{
+			ejecutar_proceso(proceso_actual); //creo que retorna el tiempo que demoro el proceso
+		}
+
+		// 1. Ejecutar el proceso head de la cola
+		// 2. Si el proceso terminó, sacarlo de la cola
+		// 3. Si el proceso no terminó, moverlo al final de la cola
+		// 4. Go to 1.
+
+	}
+
 }
 
-//agustin volvio a editar
+

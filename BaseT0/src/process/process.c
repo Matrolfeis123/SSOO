@@ -40,10 +40,10 @@ void ejecutar_proceso(Proceso* proceso){
         execv(proceso->path, proceso->argumentos); // No debiera ejecutarse nada de aca hacia abajo
         // Cambiar estado a FINISHED
         printf("Termina proceso hijo\n");
+        
     } else{ //si estamos en proceso padre:
-        printf("Empieza proceso padre\n");
         proceso->pid = pid;
-        printf("pid del proceso hijo = %d\n", proceso->pid);
+        printf("Empieza proceso padre, pid del proceso hijo = %d\n", proceso->pid);
         }
     }
 

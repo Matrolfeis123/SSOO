@@ -101,16 +101,18 @@ int main(int argc, char const *argv[])
 	{
 		printf("tiempo inicio %s: %i\n", arreglo_procesos[i].nombre, arreglo_procesos[i].tiempo_inicio);
 
-
-		if (i != cantidad_procesos-1)
+		if (i < cantidad_procesos-1)
 		{
 			arreglo_procesos[i].siguiente = &arreglo_procesos[i+1];
+			printf("proceso nombre: %s\n", arreglo_procesos[i].siguiente->nombre);
 		}
 		else
 		{
 			arreglo_procesos[i].siguiente = NULL;
+			printf("proceso nombre: %p\n", arreglo_procesos[i].siguiente);
 		}
 	}
+	
 
 
 	/*Ejecución de los procesos*/
@@ -127,7 +129,7 @@ int main(int argc, char const *argv[])
 
 	// Inicializar reloj
 	int inicio = clock()/CLOCKS_PER_SEC;
-	while (cola_procesos.head != NULL )// FALTA esperar a que llegue el primer proceso. IDDEA: (&& tiempo_inicio >= proceso_actual->tiempo_inicio)
+	while (cola_procesos.head != NULL)// FALTA esperar a que llegue el primer proceso. IDDEA: (&& tiempo_inicio >= proceso_actual->tiempo_inicio)
 	{	Proceso* proceso_actual = cola_procesos.head;
 
 		if (proceso_actual->estado == RUNNING){ //Si hay un proceso ejecutandose
@@ -142,11 +144,13 @@ int main(int argc, char const *argv[])
 
 			} else {
 				// Si no es la primera vez que se ejecuta el proceso, enviar señal de continuar
+				printf("Se envia señal de continuar a %s, pid = %i\n", proceso_actual->nombre, proceso_actual->pid);
 				kill(proceso_actual->pid, SIGCONT);
 			}
 
 			// Esperar a que finalice proceso hijo o esperar señal de IO
 			while(proceso_actual->estado != FINISHED && proceso_actual->estado != WAITING){
+				
 				// definir tiempo_transcurrido:
 				int tiempo_transcurrido = (clock() - inicio)/CLOCKS_PER_SEC;
 				// si tiempo_transcurrido >= burst:
@@ -154,22 +158,24 @@ int main(int argc, char const *argv[])
 					// Si el proceso termina antes de tiempo, pausar y moverlo a la cola de waiting
 					//1. Enviar señal de pausa a proceso hijo con signal
 					printf("Se envia señal de pausa a %s, pid = %i\n", proceso_actual->nombre, proceso_actual->pid);
-					kill(SIGSTOP, proceso_actual->pid); //Si esque hay error, entonces usar comando kill()
 					proceso_actual->t_wait = clock()/CLOCKS_PER_SEC;
-					cambiar_estado(proceso_actual, WAITING);
-					obtener_estado(proceso_actual);
+					proceso_actual->estado = WAITING;
+					kill(SIGSTOP, proceso_actual->pid); //Si esque hay error, entonces usar comando kill()
+					
 					//Guardar tiempo en cuanto inicia espera
 					break; //CORROBORAR SI ESTE BREAK HACE Q SE VUELVA A CORRER EL WHILE
 					// Ademas, nose si debo comprobar si el proceso termino o no
 				}
 				int status;
-				if (waitpid(proceso_actual->pid, &status, WNOHANG) == -1){
-				//error
-				printf("Error al esperar al proceso_actual hijo\n");
-				exit(EXIT_FAILURE);
-				}
+				int codigo_wait = waitpid(proceso_actual->pid, &status, WNOHANG);
+		
+				// if (waitpid(proceso_actual->pid, &status, WNOHANG) == -1){
+				// //error
+				// printf("Error al esperar al proceso_actual hijo\n");
+				// exit(EXIT_FAILURE);
+				// }
 				
-				else if (WIFEXITED(status)){
+				if (WIFEXITED(status)){
 					//proceso_actual hijo termina
 					//Imprimir que se recibio señal de termino de proceso hijo
 					printf("Se recibio señal de termino proceso hijo pid = %i\n", proceso_actual->pid);
@@ -179,6 +185,7 @@ int main(int argc, char const *argv[])
 				}
 				else if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT){
 					//proceso hijo termina por una señal de interrupcion
+					printf("Se recibio señal de interrupcion proceso hijo pid = %i\n", proceso_actual->pid);
 					cambiar_estado(proceso_actual, FINISHED);
 					obtener_estado(proceso_actual);
 					break;
@@ -191,20 +198,20 @@ int main(int argc, char const *argv[])
 					obtener_estado(proceso_actual);
 					break;
 				}
-
+				else if (WIFSTOPPED(status)){
+    				//proceso hijo es detenido por una señal de pausa
+					printf("Se recibio señal de pausa proceso hijo pid = %i\n", proceso_actual->pid);
+    				cambiar_estado(proceso_actual, WAITING);
+    				obtener_estado(proceso_actual);
+    				break;
+				}
 			}
 		}
 
 		else if (proceso_actual->estado == FINISHED){ //Si el proceso termino
-
 			// Sacar proceso de la cola		
+			printf("Se saca de la cola a %s\n", proceso_actual->nombre);
 			cola_procesos.head = &(*(cola_procesos.head)->siguiente);
-	
-
-			// sacarlo de la cola
-			// liberar memoria
-			// actualizar puntero head de la cola
-			// actualizar puntero proceso_actual
 		}
 
 		else if (proceso_actual->estado == READY){
@@ -216,6 +223,7 @@ int main(int argc, char const *argv[])
 				continue;
 			}
 			proceso_actual->estado = RUNNING;
+			
 		}	
 		
 		else if (proceso_actual->estado == WAITING){
@@ -224,10 +232,10 @@ int main(int argc, char const *argv[])
 			// actualizar puntero proceso_actual
 			
 			if (clock()/CLOCKS_PER_SEC - proceso_actual->t_wait >= proceso_actual->io_wait){
-					//Enviar proceso al ultimo de la cola
 					proceso_actual->estado = RUNNING;
+					cola_procesos.head = proceso_actual;
 				}
-			else{					
+			else{ //Enviar proceso al ultimo de la cola
 				proceso_actual->siguiente = NULL;
 				cola_procesos.tail->siguiente = proceso_actual;
 				cola_procesos.tail = proceso_actual;

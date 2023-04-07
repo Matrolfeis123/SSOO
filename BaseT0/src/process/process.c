@@ -27,6 +27,8 @@ void obtener_estado(Proceso* proceso){
     }
 }
 
+
+
 void ejecutar_proceso(Proceso* proceso){
     int inicio = clock(); //guarda el timepo de inicio del proceso
     int pid = fork();

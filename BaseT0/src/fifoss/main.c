@@ -130,7 +130,8 @@ int main(int argc, char const *argv[])
 	// Inicializar reloj
 	int inicio = clock()/CLOCKS_PER_SEC;
 	while (cola_procesos.head != NULL)// FALTA esperar a que llegue el primer proceso. IDDEA: (&& tiempo_inicio >= proceso_actual->tiempo_inicio)
-	{	Proceso* proceso_actual = cola_procesos.head;
+	{	printf("vuelve a while\n");
+		Proceso* proceso_actual = cola_procesos.head;
 
 		if (proceso_actual->estado == RUNNING){ //Si hay un proceso ejecutandose
 			// Dentro de ejecutar proceso, se esta constantemente comprobando si el tiempo de cpu burst actual se termina, 
@@ -236,17 +237,22 @@ int main(int argc, char const *argv[])
 					cola_procesos.head = proceso_actual;
 				}
 			else{ //Enviar proceso al ultimo de la cola
-				proceso_actual->siguiente = NULL;
-				cola_procesos.tail->siguiente = proceso_actual;
-				cola_procesos.tail = proceso_actual;
+				Proceso* aux = cola_procesos.head;
+				while(aux->siguiente != NULL){
+					aux = aux->siguiente;
 				}
-
+				aux->siguiente = proceso_actual;
+				proceso_actual->siguiente = NULL;
+				cola_procesos.head = &(*(cola_procesos.head)->siguiente);
 			}
 		// AQUI COMPROBAR EL ESTADO DE LOS PROCESOS WAITING Y VER SI SU TIEMPO DE ESPERA YA SE CUMPLIO, para pasarlo a ready
 			// al cumplirse el tiempo de espera, mover el proceso a la cola de Ready
 			// actualizar puntero del proceso_actual (?)
 
 		}
+
+}
+
 }
 
 

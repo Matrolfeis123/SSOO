@@ -236,13 +236,10 @@ int main(int argc, char const *argv[])
 					cola_procesos.head = proceso_actual;
 				}
 			else{ //Enviar proceso al ultimo de la cola
-				Proceso* aux = cola_procesos.head;
-				while(aux->siguiente != NULL){
-					aux = aux->siguiente;
-				}
-				aux->siguiente = proceso_actual;
 				proceso_actual->siguiente = NULL;
-				
+				cola_procesos.tail->siguiente = proceso_actual;
+				cola_procesos.tail = proceso_actual;
+				}
 
 			}
 		// AQUI COMPROBAR EL ESTADO DE LOS PROCESOS WAITING Y VER SI SU TIEMPO DE ESPERA YA SE CUMPLIO, para pasarlo a ready
